@@ -1,7 +1,7 @@
 import java.time.LocalDateTime;
 
 public class Flight{
-    private string flightCode;
+    private String flightCode;
     private LocalDateTime departureTime;
     private LocalDateTime arrivalTime; 
 
@@ -35,8 +35,8 @@ public class Flight{
         this.arrivalTime = arrivalTime;
     }
 
-
-
-
-
+    public String toString() {
+        
+        return "Flightcode: " + flightCode + "\n"+"Departure Time: "+departureTime+"\n"+"Arrival Time: "+arrivalTime;
+    }
 }
