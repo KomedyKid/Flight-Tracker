@@ -1,32 +1,31 @@
+
+import org.mindrot.jbcrypt.BCrypt;
+
 public class User {
 
-    private String username;
-    private String password;
+    private final String username;
+    private final String passwordHash;
 
     public User(String username, String password) {
+
+        if (username == null) {
+            throw new IllegalArgumentException("Username cannot be empty.");
+        }
         this.username = username;
-        this.password = password;
+        this.passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
     }
 
     public String getUsername() {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPasssword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
+    public boolean checkPassword(String password) {
+        return BCrypt.checkpw(password, passwordHash);
     }
 
     public String toString() {
 
-        return "Username: "+username+"\n"+"Password: "+password;
+        return "Username: "+username;
 
     }
     
