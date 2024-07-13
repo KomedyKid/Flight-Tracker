@@ -1,23 +1,25 @@
 import java.time.LocalDateTime;
+import java.util.List;
 public class Main {
 
 
 
     public static void main(String[] args) {
 
+        FlightFile flightFile = new FlightFile();
+        flightFile.loadFlights();
+
         LocalDateTime departure = LocalDateTime.of(2024, 7, 9, 8, 30);
         LocalDateTime arrival = LocalDateTime.of(2024, 7, 9, 11, 45); 
 
         Flight flight_1 = new Flight("AA123", departure, arrival);
 
-        System.out.println(flight_1);
+        flightFile.addFlight(flight_1);
 
-        String username = "ABC123";
-        String password = "1234";
-
-        User user1 = new User(username, password);
-
-        System.out.println(user1);
+        List<Flight> allFlights = flightFile.getFlights();
+        for (Flight flight : allFlights) {
+            System.out.println(flight);
+        }
 
 
     }
