@@ -5,4 +5,8 @@ public class FlightTrackingURL {
         this.flightTrackingURL = "https://www.flightradar24.com/"+flightcode;
     }
     
+    public String toString() {
+        
+        return flightTrackingURL;
+    }
 }
