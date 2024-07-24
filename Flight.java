@@ -37,7 +37,7 @@ public class Flight{
         this.arrivalTime = arrivalTime;
     }
 
-    public string getTrackingURL() {
+    public FlightTrackingURL getTrackingURL() {
         return new FlightTrackingURL(flightCode);
     }
 

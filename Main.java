@@ -1,10 +1,14 @@
+import javax.swing.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Scanner;
 public class Main {
 
-
-
     public static void main(String[] args) {
+
+        SwingUtilities.invokeLater(() -> {
+            Main app = new Main();
+        });
 
         FlightFile flightFile = new FlightFile();
         flightFile.loadFlights();
@@ -16,11 +20,15 @@ public class Main {
 
         flightFile.addFlight(flight_1);
 
-        List<Flight> allFlights = flightFile.getFlights();
-        for (Flight flight : allFlights) {
-            System.out.println(flight);
-        }
+        System.out.println(flightFile.getFlights());
 
+        Scanner myObj = new Scanner(System.in);
+        System.out.println("1: Add Flight"+"\n"+"2: Edit Flight"+"\n"+"3: Delete Flight"+"\n"+"4: View Flights");
+
+        int choice = myObj.nextInt();
+        if (choice == 1) {
+            
+        }
 
     }
     
