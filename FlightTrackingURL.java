@@ -1,4 +1,5 @@
-public class FlightTrackingURL {
+import java.io.Serializable;
+public class FlightTrackingURL implements Serializable{
     public String flightTrackingURL;
 
     public FlightTrackingURL(String flightcode) {

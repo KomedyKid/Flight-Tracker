@@ -1,6 +1,7 @@
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public class Flight{
+public class Flight implements Serializable{
     private String flightCode;
     private LocalDateTime departureTime;
     private LocalDateTime arrivalTime; 
