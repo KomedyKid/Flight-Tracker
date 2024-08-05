@@ -11,7 +11,8 @@ import java.util.List;
 
 public class FlightTrackerGUI extends JFrame {
 
-
+    private UserFile userFile;
+    private User currentUser;
     private FlightFile flightFile;
     private DefaultTableModel tableModel; 
     private JTable flightTable;
@@ -22,7 +23,50 @@ public class FlightTrackerGUI extends JFrame {
     public FlightTrackerGUI() {
         flightFile = new FlightFile();
         flightFile.loadFlights();
+        userFile = new UserFile();
 
+        // --- 1. Show Login Dialog First ---
+        showLoginDialog();
+
+        // --- 2. GUI Setup (After Successful Login) ---
+        if (currentUser != null) {
+            setupGUI(); 
+        } else {
+            System.exit(0); // Terminate if login fails
+        }
+    }
+
+    private void showLoginDialog() {
+        // Create a login dialog
+        JPanel loginPanel = new JPanel(new GridLayout(3, 2, 5, 5));
+        loginPanel.add(new JLabel("Username:"));
+        JTextField usernameField = new JTextField();
+        loginPanel.add(usernameField);
+        loginPanel.add(new JLabel("Password:"));
+        JPasswordField passwordField = new JPasswordField(); 
+        loginPanel.add(passwordField);
+        JButton loginButton = new JButton("Login");
+        loginPanel.add(loginButton);
+
+        int result = JOptionPane.showConfirmDialog(this, loginPanel, 
+                                              "Flight Tracker Login", JOptionPane.OK_CANCEL_OPTION);
+
+        if (result == JOptionPane.OK_OPTION) {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword()); 
+            currentUser = userFile.authenticateUser(username, password);
+            if (currentUser == null) {
+                JOptionPane.showMessageDialog(this, "Invalid username or password.");
+            } 
+        } else {
+            currentUser = null; // Ensure currentUser is null if login is canceled
+        }
+    }
+
+    private void setupGUI() {
+        // --- GUI Initialization (only if login is successful) ---
+        setTitle("Flight Tracker (" + currentUser.getUsername() + " - " + 
+                  currentUser.getRole() + ")");
         // GUI Initialization
         setTitle("Flight Tracker");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -75,6 +119,10 @@ public class FlightTrackerGUI extends JFrame {
 
         // Make the GUI visible
         setVisible(true); 
+
+        // --- 3. Conditionally Enable/Disable Buttons ---
+        addButton.setEnabled(currentUser.getRole() == User.Role.ADMIN); 
+        deleteButton.setEnabled(currentUser.getRole() == User.Role.ADMIN);
     }
 
     // Method to add a new flight

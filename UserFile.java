@@ -7,6 +7,11 @@ public class UserFile {
     private List<User> users = new ArrayList<>();
 
     public UserFile() {
+        if (users.isEmpty()) {  // Check if no users exist
+            addUser(new User("admin", "adminpassword", User.Role.ADMIN)); 
+            addUser(new User("viewer", "viewerpassword", User.Role.VIEWER));
+            saveUsers(); 
+        }
         loadUsers(); // Load users from file when the object is created
     }
 

@@ -1,19 +1,16 @@
 
-import org.mindrot.jbcrypt.BCrypt;
+import java.io.Serializable;
 
-public class User {
+public class User implements Serializable{
     public enum Role { ADMIN, VIEWER }
 
     private final String username;
-    private final String passwordHash;
+    private final String password;
     private final Role role;
 
     public User(String username, String password, Role role) {
-        if (username == null || password == null || role == null) {
-            throw new IllegalArgumentException("Username, password, and role cannot be null.");
-        }
         this.username = username;
-        this.passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
+        this.password = password;
         this.role = role;
     }
 
@@ -22,7 +19,7 @@ public class User {
     }
 
     public boolean checkPassword(String password) {
-        return BCrypt.checkpw(password, passwordHash);
+        return this.password.equals(password); // Simple plain text comparison
     }
 
     public Role getRole() {
