@@ -43,4 +43,13 @@ public class FlightFile {
             System.err.println("Error saving flights: " + e.getMessage());
         }
     }
+
+    public boolean deleteFlight(String flightCode) {
+        boolean removed = flights.removeIf(flight -> flight.getFlightCode().equals(flightCode));
+        if (removed) {
+            saveFlights();
+        }
+        return removed;
+    }
 }
+

@@ -56,6 +56,17 @@ public class Main {
 
                 break;
 
+                case 3:
+                    System.out.println("Enter the flight code of the flight to delete:");
+                    String flightCodeToDelete = scanner.nextLine();
+
+                    if (flightFile.deleteFlight(flightCodeToDelete)) {
+                        System.out.println("Flight " + flightCodeToDelete + " deleted successfully.");
+                    } else {
+                        System.out.println("Flight " + flightCodeToDelete + " not found.");
+                    }
+
+
                 case 4:
                     System.out.println(flightFile.loadFlights());
                 break;
