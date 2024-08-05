@@ -1,4 +1,6 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -11,8 +13,8 @@ public class FlightTrackerGUI extends JFrame {
 
 
     private FlightFile flightFile;
-    private DefaultListModel<Flight> flightListModel;
-    private JList<Flight> flightList;
+    private DefaultTableModel tableModel; 
+    private JTable flightTable;
     private JTextField flightCodeField;
     private JTextField departureTimeField;
     private JTextField arrivalTimeField;
@@ -24,16 +26,17 @@ public class FlightTrackerGUI extends JFrame {
         // GUI Initialization
         setTitle("Flight Tracker");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(600, 400);
+        setSize(800, 400);
         setLayout(new BorderLayout());
 
         // 1. Flight List Panel (Center)
-        JPanel listPanel = new JPanel(new BorderLayout());
-        flightListModel = new DefaultListModel<>();
-        loadFlightsToList(); // Load flights from file into the list model
-        flightList = new JList<>(flightListModel);
-        listPanel.add(new JScrollPane(flightList), BorderLayout.CENTER); 
-        add(listPanel, BorderLayout.CENTER);
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        String[] columnNames = {"Flight Code", "Departure Time", "Arrival Time", "Tracking URL"};
+        tableModel = new DefaultTableModel(columnNames, 0); // Create the table model
+        flightTable = new JTable(tableModel); 
+        loadFlightsToTable(); // Load data from file into the table
+        tablePanel.add(new JScrollPane(flightTable), BorderLayout.CENTER);
+        add(tablePanel, BorderLayout.CENTER);
 
         // 2. Input/Control Panel (South)
         JPanel inputPanel = new JPanel(new GridLayout(4, 2, 5, 5)); // 4 rows, 2 cols
@@ -83,7 +86,14 @@ public class FlightTrackerGUI extends JFrame {
     if (departureTime != null && arrivalTime != null && departureTime.isBefore(arrivalTime)) {
         Flight newFlight = new Flight(flightCode, departureTime, arrivalTime);
         flightFile.addFlight(newFlight);
-        flightListModel.addElement(newFlight); // Update the list model
+
+        // Add a new row to the table model
+        tableModel.addRow(new Object[]{
+            newFlight.getFlightCode(), 
+            newFlight.getDepartureTime(), 
+            newFlight.getArrivalTime(), 
+            newFlight.getTrackingURL()
+        });
 
         // Clear input fields
         flightCodeField.setText("");
@@ -96,11 +106,11 @@ public class FlightTrackerGUI extends JFrame {
 
     // Method to delete a flight
     private void deleteFlight() {
-        int selectedIndex = flightList.getSelectedIndex();
-        if (selectedIndex != -1) { 
-            Flight flightToDelete = flightListModel.get(selectedIndex);
-            flightFile.deleteFlight(flightToDelete.getFlightCode()); 
-            flightListModel.remove(selectedIndex); 
+        int selectedRow = flightTable.getSelectedRow();
+        if (selectedRow != -1) {
+            String flightCodeToDelete = (String) tableModel.getValueAt(selectedRow, 0); // Get from the first column (Flight Code)
+            flightFile.deleteFlight(flightCodeToDelete);
+            tableModel.removeRow(selectedRow);
         } else {
             JOptionPane.showMessageDialog(this, "Please select a flight to delete.");
         }
@@ -117,11 +127,14 @@ public class FlightTrackerGUI extends JFrame {
     }
 
     // Load flights from file to list model
-    private void loadFlightsToList() {
-        List<Flight> flights = flightFile.loadFlights();
-        flightListModel.clear();
-        for (Flight flight : flights) {
-            flightListModel.addElement(flight);
+    private void loadFlightsToTable() {
+        for (Flight flight : flightFile.loadFlights()) {
+            tableModel.addRow(new Object[]{
+                flight.getFlightCode(), 
+                flight.getDepartureTime(), 
+                flight.getArrivalTime(), 
+                flight.getTrackingURL()
+            });
         }
     }
 
