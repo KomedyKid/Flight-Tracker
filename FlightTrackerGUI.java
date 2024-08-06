@@ -45,22 +45,36 @@ public class FlightTrackerGUI extends JFrame {
         loginPanel.add(new JLabel("Password:"));
         JPasswordField passwordField = new JPasswordField(); 
         loginPanel.add(passwordField);
+        JOptionPane optionPane = new JOptionPane(loginPanel, JOptionPane.PLAIN_MESSAGE);
         JButton loginButton = new JButton("Login");
-        loginPanel.add(loginButton);
+        loginButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String username = usernameField.getText();
+                String password = new String(passwordField.getPassword());
+                currentUser = userFile.authenticateUser(username, password);
+    
+                if (currentUser != null) {
+                    // Successful Login: Close dialog and proceed with GUI setup
+                    JOptionPane.getRootFrame().dispose(); // Close the login dialog
+                    setupGUI();
+                } else {
+                    JOptionPane.showMessageDialog(null, "Invalid username or password.");
+                }
+            }
+        });
 
-        int result = JOptionPane.showConfirmDialog(this, loginPanel, 
-                                              "Flight Tracker Login", JOptionPane.OK_CANCEL_OPTION);
+        // --- Add ONLY the "Login" and "Cancel" buttons to the JOptionPane ---
+    optionPane.setOptions(new Object[]{loginButton, "Cancel"}); 
 
-        if (result == JOptionPane.OK_OPTION) {
-            String username = usernameField.getText();
-            String password = new String(passwordField.getPassword()); 
-            currentUser = userFile.authenticateUser(username, password);
-            if (currentUser == null) {
-                JOptionPane.showMessageDialog(this, "Invalid username or password.");
-            } 
-        } else {
-            currentUser = null; // Ensure currentUser is null if login is canceled
-        }
+    // --- Show the customized JOptionPane dialog ---
+    JDialog dialog = optionPane.createDialog(this, "Flight Tracker Login"); 
+    dialog.setVisible(true);  
+
+    // --- Check if "Cancel" was pressed ---
+    if (optionPane.getValue() == null || optionPane.getValue().equals("Cancel")) {
+        currentUser = null;  // Ensure currentUser is null on cancel
+    }
     }
 
     private void setupGUI() {
