@@ -56,7 +56,7 @@ public class FlightTrackerGUI extends JFrame {
     
                 if (currentUser != null) {
                     // Successful Login: Close dialog and proceed with GUI setup
-                    JOptionPane.getRootFrame().dispose(); // Close the login dialog
+                    dispose(); // Close the login dialog
                     setupGUI();
                 } else {
                     JOptionPane.showMessageDialog(null, "Invalid username or password.");
@@ -75,6 +75,7 @@ public class FlightTrackerGUI extends JFrame {
     if (optionPane.getValue() == null || optionPane.getValue().equals("Cancel")) {
         currentUser = null;  // Ensure currentUser is null on cancel
     }
+    
     }
 
     private void setupGUI() {
@@ -84,7 +85,7 @@ public class FlightTrackerGUI extends JFrame {
         // GUI Initialization
         setTitle("Flight Tracker");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 400);
+        
         setLayout(new BorderLayout());
 
         // 1. Flight List Panel (Center)
@@ -97,7 +98,7 @@ public class FlightTrackerGUI extends JFrame {
         add(tablePanel, BorderLayout.CENTER);
 
         // 2. Input/Control Panel (South)
-        JPanel inputPanel = new JPanel(new GridLayout(4, 2, 5, 5)); // 4 rows, 2 cols
+        JPanel inputPanel = new JPanel(new GridLayout(1, 0, 5, 5)); // 4 rows, 2 cols
 
         inputPanel.add(new JLabel("Flight Code:"));
         flightCodeField = new JTextField();
@@ -110,7 +111,6 @@ public class FlightTrackerGUI extends JFrame {
         inputPanel.add(new JLabel("Arrival (YYYYMMDDHHmm):"));
         arrivalTimeField = new JTextField();
         inputPanel.add(arrivalTimeField);
-
         JButton addButton = new JButton("Add Flight");
         addButton.addActionListener(new ActionListener() {
             @Override
