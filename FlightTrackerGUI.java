@@ -1,146 +1,114 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.List;
 
 public class FlightTrackerGUI extends JFrame {
 
     private UserFile userFile;
     private User currentUser;
     private FlightFile flightFile;
-    private DefaultTableModel tableModel; 
+    private DefaultTableModel tableModel;
     private JTable flightTable;
-    private JTextField flightCodeField;
-    private JTextField departureTimeField;
-    private JTextField arrivalTimeField;
+    private JTextField flightCodeField, departureTimeField, arrivalTimeField;
 
     public FlightTrackerGUI() {
-        flightFile = new FlightFile();
-        flightFile.loadFlights();
-        userFile = new UserFile();
-
-        // --- 1. Show Login Dialog First ---
+        initializeFiles();
         showLoginDialog();
+        setupGUI();
+    }
 
-        // --- 2. GUI Setup (After Successful Login) ---
-        if (currentUser != null) {
-            setupGUI(); 
-        } else {
-            System.exit(0); // Terminate if login fails
-        }
+    private void initializeFiles() {
+        flightFile = new FlightFile();
+        userFile = new UserFile();
     }
 
     private void showLoginDialog() {
-        // Create a login dialog
         JPanel loginPanel = new JPanel(new GridLayout(3, 2, 5, 5));
         loginPanel.add(new JLabel("Username:"));
         JTextField usernameField = new JTextField();
         loginPanel.add(usernameField);
         loginPanel.add(new JLabel("Password:"));
-        JPasswordField passwordField = new JPasswordField(); 
+        JPasswordField passwordField = new JPasswordField();
         loginPanel.add(passwordField);
-        JOptionPane optionPane = new JOptionPane(loginPanel, JOptionPane.PLAIN_MESSAGE);
-        JButton loginButton = new JButton("Login");
-        loginButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String username = usernameField.getText();
-                String password = new String(passwordField.getPassword());
-                currentUser = userFile.authenticateUser(username, password);
-    
-                if (currentUser != null) {
-                    // Successful Login: Close dialog and proceed with GUI setup
-                    dispose(); // Close the login dialog
-                    setupGUI();
-                } else {
-                    JOptionPane.showMessageDialog(null, "Invalid username or password.");
-                }
-            }
-        });
 
-        // --- Add ONLY the "Login" and "Cancel" buttons to the JOptionPane ---
-    optionPane.setOptions(new Object[]{loginButton, "Cancel"}); 
-
-    // --- Show the customized JOptionPane dialog ---
-    JDialog dialog = optionPane.createDialog(this, "Flight Tracker Login"); 
-    dialog.setVisible(true);  
-
-    // --- Check if "Cancel" was pressed ---
-    if (optionPane.getValue() == null || optionPane.getValue().equals("Cancel")) {
-        currentUser = null;  // Ensure currentUser is null on cancel
+        int result = JOptionPane.showConfirmDialog(this, loginPanel, "Login",
+                                                   JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            authenticateUser(usernameField.getText(), new String(passwordField.getPassword()));
+        } else {
+            System.exit(0);
+        }
     }
-    
+
+    private void authenticateUser(String username, String password) {
+        currentUser = userFile.authenticateUser(username, password);
+        if (currentUser == null) {
+            JOptionPane.showMessageDialog(this, "Invalid username or password.");
+            showLoginDialog();
+        }
     }
 
     private void setupGUI() {
-        // --- GUI Initialization (only if login is successful) ---
-        setTitle("Flight Tracker (" + currentUser.getUsername() + " - " + 
-                  currentUser.getRole() + ")");
-        // GUI Initialization
-        setTitle("Flight Tracker");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-        setLayout(new BorderLayout());
+        if (currentUser != null) {
+            setTitle("Flight Tracker (" + currentUser.getUsername() + " - " + currentUser.getRole() + ")");
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            setLayout(new BorderLayout());
+            add(createTablePanel(), BorderLayout.CENTER);
+            add(createInputPanel(), BorderLayout.SOUTH);
+            pack(); // Adjusts window to fit components
+            setVisible(true);
+        } else {
+            System.exit(0);
+        }
+    }
 
-        // 1. Flight List Panel (Center)
+    private JPanel createTablePanel() {
         JPanel tablePanel = new JPanel(new BorderLayout());
         String[] columnNames = {"Flight Code", "Departure Time", "Arrival Time", "Tracking URL"};
-        tableModel = new DefaultTableModel(columnNames, 0); // Create the table model
-        flightTable = new JTable(tableModel); 
-        loadFlightsToTable(); // Load data from file into the table
+        tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                // Only allow admins to edit the table
+                return currentUser.getRole() == User.Role.ADMIN;
+            }
+        };
+        flightTable = new JTable(tableModel);
+        loadFlightsToTable();
         tablePanel.add(new JScrollPane(flightTable), BorderLayout.CENTER);
-        add(tablePanel, BorderLayout.CENTER);
+        return tablePanel;
+    }
 
-        // 2. Input/Control Panel (South)
-        JPanel inputPanel = new JPanel(new GridLayout(1, 0, 5, 5)); // 4 rows, 2 cols
-
+    private JPanel createInputPanel() {
+        JPanel inputPanel = new JPanel(new GridLayout(1, 6, 5, 5));
         inputPanel.add(new JLabel("Flight Code:"));
         flightCodeField = new JTextField();
         inputPanel.add(flightCodeField);
-
         inputPanel.add(new JLabel("Departure (YYYYMMDDHHmm):"));
         departureTimeField = new JTextField();
         inputPanel.add(departureTimeField);
-
         inputPanel.add(new JLabel("Arrival (YYYYMMDDHHmm):"));
         arrivalTimeField = new JTextField();
         inputPanel.add(arrivalTimeField);
-        JButton addButton = new JButton("Add Flight");
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                addFlight();
-            }
-        });
-        inputPanel.add(addButton);
+        inputPanel.add(createButton("Add Flight", this::addFlight));
+        inputPanel.add(createButton("Delete Flight", this::deleteFlight));
+        return inputPanel;
+    }
 
-        JButton deleteButton = new JButton("Delete Flight");
-        deleteButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                deleteFlight();
-            }
-        });
-        inputPanel.add(deleteButton);
-
-        add(inputPanel, BorderLayout.SOUTH);
-
-        // Make the GUI visible
-        setVisible(true); 
-
-        // --- 3. Conditionally Enable/Disable Buttons ---
-        addButton.setEnabled(currentUser.getRole() == User.Role.ADMIN); 
-        deleteButton.setEnabled(currentUser.getRole() == User.Role.ADMIN);
+    private JButton createButton(String label, ActionListener action) {
+        JButton button = new JButton(label);
+        button.addActionListener(action);
+        // Enable or disable based on the user role
+        button.setEnabled(currentUser.getRole() == User.Role.ADMIN);
+        return button;
     }
 
     // Method to add a new flight
-    private void addFlight() {
+    private void addFlight(ActionEvent e) {
     String flightCode = flightCodeField.getText();
     LocalDateTime departureTime = parseDateTime(departureTimeField.getText());
     LocalDateTime arrivalTime = parseDateTime(arrivalTimeField.getText());
@@ -167,7 +135,7 @@ public class FlightTrackerGUI extends JFrame {
     }
 
     // Method to delete a flight
-    private void deleteFlight() {
+    private void deleteFlight(ActionEvent e) {
         int selectedRow = flightTable.getSelectedRow();
         if (selectedRow != -1) {
             String flightCodeToDelete = (String) tableModel.getValueAt(selectedRow, 0); // Get from the first column (Flight Code)
@@ -201,7 +169,7 @@ public class FlightTrackerGUI extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new FlightTrackerGUI());
+        SwingUtilities.invokeLater(FlightTrackerGUI::new);
     }
 }
 

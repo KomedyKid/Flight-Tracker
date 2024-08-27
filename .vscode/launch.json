@@ -6,6 +6,20 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "Main",
+            "projectName": "Flight-Tracker_98cf1d4"
+        },
+        {
+            "type": "java",
+            "name": "FlightTrackerGUI",
+            "request": "launch",
+            "mainClass": "FlightTrackerGUI",
+            "projectName": "Flight-Tracker_98cf1d4"
+        },
+        {
+            "type": "java",
             "name": "FlightTrackerGUI",
             "request": "launch",
             "mainClass": "FlightTrackerGUI",
