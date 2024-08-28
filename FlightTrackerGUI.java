@@ -1,11 +1,25 @@
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableModel;
+
 
 public class FlightTrackerGUI extends JFrame {
 
@@ -65,6 +79,7 @@ public class FlightTrackerGUI extends JFrame {
         } else {
             System.exit(0);
         }
+        loadFlightsToTable();
     }
 
     private JPanel createTablePanel() {
@@ -109,38 +124,44 @@ public class FlightTrackerGUI extends JFrame {
 
     // Method to add a new flight
     private void addFlight(ActionEvent e) {
-    String flightCode = flightCodeField.getText();
-    LocalDateTime departureTime = parseDateTime(departureTimeField.getText());
-    LocalDateTime arrivalTime = parseDateTime(arrivalTimeField.getText());
+        String flightCode = flightCodeField.getText();
+        LocalDateTime departureTime = parseDateTime(departureTimeField.getText());
+        LocalDateTime arrivalTime = parseDateTime(arrivalTimeField.getText());
 
-    if (departureTime != null && arrivalTime != null && departureTime.isBefore(arrivalTime)) {
-        Flight newFlight = new Flight(flightCode, departureTime, arrivalTime);
-        flightFile.addFlight(newFlight);
-
-        // Add a new row to the table model
-        tableModel.addRow(new Object[]{
-            newFlight.getFlightCode(), 
-            newFlight.getDepartureTime(), 
-            newFlight.getArrivalTime(), 
-            newFlight.getTrackingURL()
-        });
-
-        // Clear input fields
-        flightCodeField.setText("");
-        departureTimeField.setText("");
-        arrivalTimeField.setText("");
-    } else {
-        JOptionPane.showMessageDialog(this, "Invalid input or arrival is before departure.");
-    }
+        if (departureTime != null && arrivalTime != null && departureTime.isBefore(arrivalTime)) {
+            Flight newFlight = new Flight(flightCode, departureTime, arrivalTime);
+            try {
+                flightFile.addFlight(newFlight);
+                tableModel.addRow(new Object[]{
+                    newFlight.getFlightCode(),
+                    newFlight.getDepartureTime(),
+                    newFlight.getArrivalTime()
+                });
+                flightCodeField.setText("");
+                departureTimeField.setText("");
+                arrivalTimeField.setText("");
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Error adding flight: " + ex.getMessage());
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Invalid input or arrival is before departure.");
+        }
     }
 
     // Method to delete a flight
     private void deleteFlight(ActionEvent e) {
         int selectedRow = flightTable.getSelectedRow();
         if (selectedRow != -1) {
-            String flightCodeToDelete = (String) tableModel.getValueAt(selectedRow, 0); // Get from the first column (Flight Code)
-            flightFile.deleteFlight(flightCodeToDelete);
-            tableModel.removeRow(selectedRow);
+            String flightCodeToDelete = (String) tableModel.getValueAt(selectedRow, 0); // Get flight code from the table
+            try {
+                if (flightFile.deleteFlight(flightCodeToDelete)) {
+                    tableModel.removeRow(selectedRow);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Flight not found or could not be deleted.");
+                }
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Error deleting flight: " + ex.getMessage());
+            }
         } else {
             JOptionPane.showMessageDialog(this, "Please select a flight to delete.");
         }
@@ -158,13 +179,17 @@ public class FlightTrackerGUI extends JFrame {
 
     // Load flights from file to list model
     private void loadFlightsToTable() {
-        for (Flight flight : flightFile.loadFlights()) {
-            tableModel.addRow(new Object[]{
-                flight.getFlightCode(), 
-                flight.getDepartureTime(), 
-                flight.getArrivalTime(), 
-                flight.getTrackingURL()
-            });
+        try {
+            List<Flight> flights = flightFile.loadFlights();
+            for (Flight flight : flights) {
+                tableModel.addRow(new Object[]{
+                    flight.getFlightCode(),
+                    flight.getDepartureTime(),
+                    flight.getArrivalTime()
+                });
+            }
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Error loading flights: " + ex.getMessage());
         }
     }
 
