@@ -1,5 +1,4 @@
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,12 +7,8 @@ public class FlightFile {
     private static final String FILE_NAME = "flights.dat";
 
     public void addFlight(Flight flight) throws IOException {
-        try (RandomAccessFile file = new RandomAccessFile("flights.dat", "rw")) {
-            file.seek(file.length());  // Go to the end of the file
-            file.writeUTF(flight.getFlightCode());
-            file.writeUTF(flight.getDepartureTime().toString());
-            file.writeUTF(flight.getArrivalTime().toString());
-            file.writeBoolean(false);  // Flight is not deleted
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(FILE_NAME, true)))) {
+            flight.write(out);
         } catch (IOException e) {
             System.err.println("Error writing to file: " + e.getMessage());
             throw e;
@@ -21,65 +16,43 @@ public class FlightFile {
     }
 
     public boolean deleteFlight(String flightCode) throws IOException {
-        try (RandomAccessFile file = new RandomAccessFile(FILE_NAME, "rw")) {
-            while (file.getFilePointer() < file.length()) {
-                long position = file.getFilePointer();
-                Flight flight = readFlight(file);
-                if (flight.getFlightCode().equals(flightCode) && !flight.isDeleted()) {
-                    file.seek(position);
-                    file.writeBoolean(true);  // Mark as deleted
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+        List<Flight> flights = loadFlights();
+        boolean found = false;
 
-    public Flight searchFlight(String flightCode) throws IOException {
-        try (RandomAccessFile file = new RandomAccessFile(FILE_NAME, "r")) {
-            while (file.getFilePointer() < file.length()) {
-                Flight flight = readFlight(file);
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(FILE_NAME)))) {
+            for (Flight flight : flights) {
                 if (flight.getFlightCode().equals(flightCode) && !flight.isDeleted()) {
-                    return flight;
+                    flight.setDeleted(true);
+                    found = true;
                 }
+                flight.write(out);
             }
+        } catch (IOException e) {
+            System.err.println("Error writing to file: " + e.getMessage());
+            throw e;
         }
-        return null;
+
+        return found;
     }
 
     public List<Flight> loadFlights() throws IOException {
         List<Flight> flights = new ArrayList<>();
-        try (RandomAccessFile file = new RandomAccessFile("flights.dat", "r")) {
-            while (file.getFilePointer() < file.length()) {
-                String flightCode = file.readUTF();
-                LocalDateTime departure = LocalDateTime.parse(file.readUTF());
-                LocalDateTime arrival = LocalDateTime.parse(file.readUTF());
-                boolean isDeleted = file.readBoolean();
-                if (!isDeleted) {
-                    flights.add(new Flight(flightCode, departure, arrival));
+
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(FILE_NAME)))) {
+            while (in.available() > 0) {
+                Flight flight = Flight.read(in);
+                if (!flight.isDeleted()) {
+                    flights.add(flight);
                 }
             }
+        } catch (EOFException e) {
+            // End of file reached
         } catch (IOException e) {
             System.err.println("Error reading from file: " + e.getMessage());
             throw e;
         }
+
         return flights;
     }
-
-    private void writeFlight(RandomAccessFile file, Flight flight) throws IOException {
-        file.writeUTF(flight.getFlightCode());
-        file.writeUTF(flight.getDepartureTime().toString());
-        file.writeUTF(flight.getArrivalTime().toString());
-        file.writeBoolean(flight.isDeleted());
-    }
-
-    private Flight readFlight(RandomAccessFile file) throws IOException {
-        String flightCode = file.readUTF();
-        LocalDateTime departure = LocalDateTime.parse(file.readUTF().trim());
-        LocalDateTime arrival = LocalDateTime.parse(file.readUTF().trim());
-        boolean isDeleted = file.readBoolean();
-        Flight flight = new Flight(flightCode, departure, arrival);
-        flight.setDeleted(isDeleted);
-        return flight;
-    }
 }
+

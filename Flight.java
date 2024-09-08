@@ -1,52 +1,36 @@
-import java.io.Serializable;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
-public class Flight implements Serializable{
-    private static final int FLIGHT_CODE_SIZE = 10;  // Maximum characters
-    private static final int DATE_TIME_SIZE = 19;    // "yyyy-MM-ddTHH:mm:ss"
-    private static final int DELETED_FLAG_SIZE = 1;  // '0' for active, '1' for deleted
-    private static final int RECORD_SIZE = FLIGHT_CODE_SIZE + 2 * DATE_TIME_SIZE + DELETED_FLAG_SIZE;
-
+public class Flight {
     private String flightCode;
     private LocalDateTime departureTime;
-    private LocalDateTime arrivalTime; 
-    private FlightTrackingURL trackingURL;
+    private LocalDateTime arrivalTime;
     private boolean isDeleted;
+    private FlightTrackingURL trackingURL;
+
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     public Flight(String flightCode, LocalDateTime departureTime, LocalDateTime arrivalTime) {
         this.flightCode = flightCode;
         this.departureTime = departureTime;
         this.arrivalTime = arrivalTime;
-        this.trackingURL = new FlightTrackingURL(flightCode);
         this.isDeleted = false;
+        this.trackingURL = new FlightTrackingURL(flightCode);
     }
 
     public String getFlightCode() {
         return flightCode;
     }
 
-    public void setFlightCode(String flightCode) {
-        this.flightCode = flightCode;
-    }
-
     public LocalDateTime getDepartureTime() {
         return departureTime;
     }
 
-    public void setDepartureTime(LocalDateTime departureTime) {
-        this.departureTime = departureTime;
-    }
-
     public LocalDateTime getArrivalTime() {
         return arrivalTime;
-    }
-
-    public void setArrivalTime(LocalDateTime arrivalTime) {
-        this.arrivalTime = arrivalTime;
-    }
-
-    public FlightTrackingURL getTrackingURL() {
-        return new FlightTrackingURL(flightCode);
     }
 
     public boolean isDeleted() {
@@ -57,8 +41,27 @@ public class Flight implements Serializable{
         this.isDeleted = isDeleted;
     }
 
-    public String toString() {
-        
-        return "Flightcode: " + flightCode + "\n"+"Departure Time: "+departureTime+"\n"+"Arrival Time: "+arrivalTime+"\n"+"Tracking URL: "+trackingURL;
+    public FlightTrackingURL getTrackingURL() {
+        return trackingURL;
+    }
+
+    public void write(DataOutputStream out) throws IOException {
+        out.writeUTF(flightCode);
+        out.writeUTF(departureTime.format(formatter));
+        out.writeUTF(arrivalTime.format(formatter));
+        out.writeBoolean(isDeleted);
+        out.writeUTF(trackingURL.toString());
+    }
+
+    public static Flight read(DataInputStream in) throws IOException {
+        String flightCode = in.readUTF();
+        LocalDateTime departureTime = LocalDateTime.parse(in.readUTF(), formatter);
+        LocalDateTime arrivalTime = LocalDateTime.parse(in.readUTF(), formatter);
+        boolean isDeleted = in.readBoolean();
+        String trackingURL = in.readUTF();
+        Flight flight = new Flight(flightCode, departureTime, arrivalTime);
+        flight.setDeleted(isDeleted);
+        flight.trackingURL = new FlightTrackingURL(flightCode); // Recreate tracking URL
+        return flight;
     }
 }
