@@ -7,7 +7,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserFile {
+public final class UserFile {
     private final String FILE_NAME = "users.dat";
     private List<User> users = new ArrayList<>();
 

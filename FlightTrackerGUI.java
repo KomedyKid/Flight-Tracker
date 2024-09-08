@@ -1,27 +1,18 @@
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import com.toedter.calendar.JDateChooser;
+import java.awt.*;
+import java.awt.event.*;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.ZoneId;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.awt.Dimension;
-import java.awt.Font;
-import javax.swing.BorderFactory;
-import javax.swing.SwingConstants;
-
+import java.util.List;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-
-import com.toedter.calendar.JDateChooser;
-import com.toedter.calendar.JSpinnerDateEditor;
 
 public class FlightTrackerGUI extends JFrame {
 
@@ -37,6 +28,9 @@ public class FlightTrackerGUI extends JFrame {
     private JButton searchButton;
     private JLabel statusLabel;
     private JLabel nextTripLabel;
+    private JLabel departureLabel;
+    private JLabel arrivalLabel;
+    private JLabel trackingUrlLabel;
 
     public FlightTrackerGUI() {
         initializeFiles();
@@ -284,6 +278,96 @@ public class FlightTrackerGUI extends JFrame {
                 return;
             }
         }
+    }
+
+    private JPanel createViewerPanel() {
+        JPanel viewerPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridwidth = GridBagConstraints.REMAINDER;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        nextTripLabel = new JLabel("Next Trip: None scheduled");
+        nextTripLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        viewerPanel.add(nextTripLabel, gbc);
+
+        departureLabel = new JLabel("Departure: N/A");
+        viewerPanel.add(departureLabel, gbc);
+
+        arrivalLabel = new JLabel("Arrival: N/A");
+        viewerPanel.add(arrivalLabel, gbc);
+
+        trackingUrlLabel = new JLabel("Tracking URL: N/A");
+        trackingUrlLabel.setForeground(Color.BLUE);
+        trackingUrlLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        trackingUrlLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                String urlText = trackingUrlLabel.getText().substring(13).trim();
+                if (!urlText.startsWith("http://") && !urlText.startsWith("https://")) {
+                    urlText = "https://" + urlText;
+                }
+                
+                if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                    try {
+                        URL url = new URL(urlText);
+                        Desktop.getDesktop().browse(url.toURI());
+                    } catch (MalformedURLException ex) {
+                        JOptionPane.showMessageDialog(FlightTrackerGUI.this, 
+                            "Invalid URL format: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(FlightTrackerGUI.this, 
+                            "Error opening URL: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        });
+        viewerPanel.add(trackingUrlLabel, gbc);
+
+        statusLabel = new JLabel("Status: No upcoming flights");
+        viewerPanel.add(statusLabel, gbc);
+
+        return viewerPanel;
+    }
+
+    private void updateViewerPanel(Flight flight) {
+        if (flight != null) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            nextTripLabel.setText("Next Trip: " + flight.getFlightCode());
+            departureLabel.setText("Departure: " + flight.getDepartureTime().format(formatter));
+            arrivalLabel.setText("Arrival: " + flight.getArrivalTime().format(formatter));
+            trackingUrlLabel.setText("Tracking URL: " + flight.getTrackingURL().toString());
+            String flightStatus = flight.getDepartureTime().isAfter(LocalDateTime.now()) ? "Upcoming" : "In Progress";
+            statusLabel.setText("Status: " + flightStatus + " flight");
+        } else {
+            nextTripLabel.setText("Next Trip: None scheduled");
+            departureLabel.setText("Departure: N/A");
+            arrivalLabel.setText("Arrival: N/A");
+            trackingUrlLabel.setText("Tracking URL: N/A");
+            statusLabel.setText("Status: No upcoming or current flights");
+        }
+    }
+
+    private void updateFlightInfo() {
+        if (currentUser.getRole() == User.Role.VIEWER) {
+            try {
+                List<Flight> flights = flightFile.loadFlights();
+                Flight nextFlight = findNextOrCurrentFlight(flights);
+                updateViewerPanel(nextFlight);
+            } catch (IOException ex) {
+                statusLabel.setText("Status: Error loading flight information");
+            }
+        } else {
+            loadFlightsToTable();
+        }
+    }
+
+    private Flight findNextOrCurrentFlight(List<Flight> flights) {
+        LocalDateTime now = LocalDateTime.now();
+        return flights.stream()
+                      .filter(f -> f.getArrivalTime().isAfter(now))  // Include flights that haven't ended yet
+                      .min((f1, f2) -> f1.getDepartureTime().compareTo(f2.getDepartureTime()))
+                      .orElse(null);
     }
 
     public static void main(String[] args) {
