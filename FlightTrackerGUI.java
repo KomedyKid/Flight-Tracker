@@ -31,6 +31,7 @@ public class FlightTrackerGUI extends JFrame {
     private JLabel departureLabel;
     private JLabel arrivalLabel;
     private JLabel trackingUrlLabel;
+    private JButton logoutButton;
 
     public FlightTrackerGUI() {
         initializeFiles();
@@ -75,14 +76,22 @@ public class FlightTrackerGUI extends JFrame {
             setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             setLayout(new BorderLayout());
             
+            logoutButton = new JButton("Log Out");
+            logoutButton.addActionListener(e -> logout());
+            
             if (currentUser.getRole() == User.Role.ADMIN) {
                 add(createTablePanel(), BorderLayout.CENTER);
                 add(createSearchPanel(), BorderLayout.NORTH);
-                add(createInputPanel(), BorderLayout.SOUTH);
+                JPanel southPanel = new JPanel(new BorderLayout());
+                southPanel.add(createInputPanel(), BorderLayout.CENTER);
+                southPanel.add(logoutButton, BorderLayout.EAST);
+                add(southPanel, BorderLayout.SOUTH);
                 pack();
             } else {
-                add(createViewerPanel(), BorderLayout.CENTER);
-                setSize(400, 200); // Set a default size for viewers
+                JPanel viewerPanel = createViewerPanel();
+                viewerPanel.add(logoutButton);
+                add(viewerPanel, BorderLayout.CENTER);
+                setSize(400, 250); // Increased height to accommodate the logout button
             }
             
             setLocationRelativeTo(null); // Center the window on the screen
@@ -368,6 +377,17 @@ public class FlightTrackerGUI extends JFrame {
                       .filter(f -> f.getArrivalTime().isAfter(now))  // Include flights that haven't ended yet
                       .min((f1, f2) -> f1.getDepartureTime().compareTo(f2.getDepartureTime()))
                       .orElse(null);
+    }
+
+    private void logout() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to log out?", "Confirm Logout",
+            JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            dispose(); // Close the current window
+            new FlightTrackerGUI(); // Create a new instance of the application
+        }
     }
 
     public static void main(String[] args) {
