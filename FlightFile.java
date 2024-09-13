@@ -1,5 +1,4 @@
 import java.io.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +52,29 @@ public class FlightFile {
         }
 
         return flights;
+    }
+
+    public void updateFlight(Flight updatedFlight) throws IOException {
+        List<Flight> flights = loadFlights();
+        boolean found = false;
+
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(FILE_NAME)))) {
+            for (Flight flight : flights) {
+                if (flight.getFlightCode().equals(updatedFlight.getFlightCode())) {
+                    updatedFlight.write(out);
+                    found = true;
+                } else {
+                    flight.write(out);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error writing to file: " + e.getMessage());
+            throw e;
+        }
+
+        if (!found) {
+            throw new IOException("Flight not found");
+        }
     }
 }
 

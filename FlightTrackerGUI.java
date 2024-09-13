@@ -32,6 +32,7 @@ public class FlightTrackerGUI extends JFrame {
     private JLabel arrivalLabel;
     private JLabel trackingUrlLabel;
     private JButton logoutButton;
+    private JButton editFlightButton;
 
     public FlightTrackerGUI() {
         initializeFiles();
@@ -87,6 +88,7 @@ public class FlightTrackerGUI extends JFrame {
                 southPanel.add(logoutButton, BorderLayout.EAST);
                 add(southPanel, BorderLayout.SOUTH);
                 pack();
+                setupTableSelectionListener();
             } else {
                 JPanel viewerPanel = createViewerPanel();
                 viewerPanel.add(logoutButton);
@@ -118,7 +120,7 @@ public class FlightTrackerGUI extends JFrame {
     }
 
     private JPanel createInputPanel() {
-        JPanel inputPanel = new JPanel(new GridLayout(1, 9, 5, 5));
+        JPanel inputPanel = new JPanel(new GridLayout(1, 10, 5, 5)); // Changed to 10 columns
         inputPanel.add(new JLabel("Flight Code:"));
         flightCodeField = new JTextField();
         inputPanel.add(flightCodeField);
@@ -141,6 +143,8 @@ public class FlightTrackerGUI extends JFrame {
         
         inputPanel.add(createButton("Add Flight", this::addFlight));
         inputPanel.add(createButton("Delete Flight", this::deleteFlight));
+        editFlightButton = createButton("Edit Flight", this::editFlight);
+        inputPanel.add(editFlightButton);
         return inputPanel;
     }
 
@@ -207,6 +211,60 @@ public class FlightTrackerGUI extends JFrame {
         } else {
             JOptionPane.showMessageDialog(this, "Please select a flight to delete.");
         }
+    }
+
+    private void editFlight(ActionEvent e) {
+        int selectedRow = flightTable.getSelectedRow();
+        if (selectedRow != -1) {
+            String flightCode = (String) tableModel.getValueAt(selectedRow, 0);
+            LocalDateTime departureTime = getLocalDateTimeFromChooser(departureDateChooser, departureTimeSpinner);
+            LocalDateTime arrivalTime = getLocalDateTimeFromChooser(arrivalDateChooser, arrivalTimeSpinner);
+
+            if (departureTime != null && arrivalTime != null && departureTime.isBefore(arrivalTime)) {
+                try {
+                    Flight updatedFlight = new Flight(flightCode, departureTime, arrivalTime);
+                    flightFile.updateFlight(updatedFlight);
+                    tableModel.setValueAt(departureTime, selectedRow, 1);
+                    tableModel.setValueAt(arrivalTime, selectedRow, 2);
+                    JOptionPane.showMessageDialog(this, "Flight updated successfully.");
+                    clearInputFields();
+                    updateFlightInfo();
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(this, "Error updating flight: " + ex.getMessage());
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid input or arrival is before departure.");
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select a flight to edit.");
+        }
+    }
+
+    private void clearInputFields() {
+        flightCodeField.setText("");
+        departureDateChooser.setDate(null);
+        arrivalDateChooser.setDate(null);
+        departureTimeSpinner.setValue(new Date());
+        arrivalTimeSpinner.setValue(new Date());
+    }
+
+    private void setupTableSelectionListener() {
+        flightTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int selectedRow = flightTable.getSelectedRow();
+                if (selectedRow != -1) {
+                    String flightCode = (String) tableModel.getValueAt(selectedRow, 0);
+                    LocalDateTime departureTime = (LocalDateTime) tableModel.getValueAt(selectedRow, 1);
+                    LocalDateTime arrivalTime = (LocalDateTime) tableModel.getValueAt(selectedRow, 2);
+                    
+                    flightCodeField.setText(flightCode);
+                    departureDateChooser.setDate(Date.from(departureTime.atZone(ZoneId.systemDefault()).toInstant()));
+                    arrivalDateChooser.setDate(Date.from(arrivalTime.atZone(ZoneId.systemDefault()).toInstant()));
+                    departureTimeSpinner.setValue(Date.from(departureTime.atZone(ZoneId.systemDefault()).toInstant()));
+                    arrivalTimeSpinner.setValue(Date.from(arrivalTime.atZone(ZoneId.systemDefault()).toInstant()));
+                }
+            }
+        });
     }
 
     private LocalDateTime parseDateTime(String dateTimeString) {
