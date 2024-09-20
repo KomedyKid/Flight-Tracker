@@ -90,5 +90,19 @@ public class FlightBST {
     private Flight findSmallestFlight(FlightNode root) {
         return root.getLeft() == null ? root.getFlight() : findSmallestFlight(root.getLeft());
     }
+
+    //Traversal of the BST in order
+    public List<Flight> inOrderTraversal() {
+        List<Flight> flights = new ArrayList<>();
+        inOrderRec(root, flights);
+        return flights;
+    }
+    private void inOrderRec(FlightNode current, List<Flight> flights) {
+        if (current != null) {
+            inOrderRec(current.getLeft(), flights);
+            flights.add(current.getFlight());
+            inOrderRec(current.getRight(), flights);
+        }
+    }
     
 }
