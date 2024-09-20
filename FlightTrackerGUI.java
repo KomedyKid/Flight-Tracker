@@ -279,7 +279,7 @@ public class FlightTrackerGUI extends JFrame {
     private void loadFlightsToTable() {
         tableModel.setRowCount(0);
         try {
-            List<Flight> flights = flightFile.loadFlights();
+            List<Flight> flights = flightFile.getAllFlights();
             for (Flight flight : flights) {
                 tableModel.addRow(new Object[]{
                     flight.getFlightCode(),
@@ -288,7 +288,7 @@ public class FlightTrackerGUI extends JFrame {
                     flight.getTrackingURL().toString()
                 });
             }
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error loading flights: " + ex.getMessage());
             ex.printStackTrace();
         }
@@ -314,17 +314,13 @@ public class FlightTrackerGUI extends JFrame {
             return;
         }
 
-        try {
-            List<Flight> flights = flightFile.loadFlights();
-            Flight foundFlight = sequentialSearch(flights, searchCode);
-            
-            if (foundFlight != null) {
-                highlightFlightInTable(foundFlight);
-            } else {
-                JOptionPane.showMessageDialog(this, "Flight not found.");
-            }
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Error searching for flight: " + ex.getMessage());
+        Flight foundFlight = flightFile.searchFlight(searchCode);
+
+        if (foundFlight != null) {
+            highlightFlightInTable(foundFlight);
+
+        } else {
+            JOptionPane.showMessageDialog(this, "Flight not found.");
         }
     }
 
@@ -432,7 +428,7 @@ public class FlightTrackerGUI extends JFrame {
     private Flight findNextOrCurrentFlight(List<Flight> flights) {
         LocalDateTime now = LocalDateTime.now();
         return flights.stream()
-                      .filter(f -> f.getArrivalTime().isAfter(now))  // Include flights that haven't ended yet
+                      .filter(f -> f.getArrivalTime().isAfter(now))
                       .min((f1, f2) -> f1.getDepartureTime().compareTo(f2.getDepartureTime()))
                       .orElse(null);
     }
