@@ -31,6 +31,26 @@ public class FlightBST {
             throw new Exception("Duplicate flight code not allowed.");
         }
     }
+    
+    //search for flight by flightcode in the BSt
+    public Flight search(String flightCode) {
+        return searchRec(root, flightCode);
+    }
+
+    private Flight searchRec(FlightNode current, String flightCode) {
+        if (current == null) {
+            return null;
+        }
+        if (flightCode.equals(current.getFlight().getFlightCode())) {
+            return current.getFlight();
+        }
+        if (flightCode.compareTo(current.getFlight().getFlightCode()) < 0) {
+            return searchRec(current.getLeft(), flightCode);
+        } else {
+            return searchRec(current.getRight(), flightCode);
+        }
+    }
+
         
     
     
