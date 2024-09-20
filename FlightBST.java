@@ -31,7 +31,7 @@ public class FlightBST {
             throw new Exception("Duplicate flight code not allowed.");
         }
     }
-    
+
     //search for flight by flightcode in the BSt
     public Flight search(String flightCode) {
         return searchRec(root, flightCode);
@@ -52,6 +52,43 @@ public class FlightBST {
     }
 
         
-    
+    //deleting a flight from the BST
+    public void delete(String flightCode) throws Exception {
+        root = deleteRec(root, flightCode);
+    }
+
+    private FlightNode deleteRec(FlightNode current, String flightCode) throws Exception {
+        if (current == null) {
+            throw new Exception("Flight not found.");
+        }
+        if (flightCode.equals(current.getFlight().getFlightCode())) {
+            // Node to be deleted found
+            if (current.getLeft() == null && current.getRight() == null) {
+                return null; // No children
+            }
+            if (current.getLeft() == null) {
+                return current.getRight(); // One child
+            }
+            if (current.getRight() == null) {
+                return current.getLeft(); // One child
+            }
+            // Two children
+            Flight smallestFlight = findSmallestFlight(current.getRight());
+            current.setFlight(smallestFlight);
+            current.setRight(deleteRec(current.getRight(), smallestFlight.getFlightCode()));
+            return current;
+        }
+        if (flightCode.compareTo(current.getFlight().getFlightCode()) < 0) {
+            current.setLeft(deleteRec(current.getLeft(), flightCode));
+            return current;
+        } else {
+            current.setRight(deleteRec(current.getRight(), flightCode));
+            return current;
+        }
+    }
+
+    private Flight findSmallestFlight(FlightNode root) {
+        return root.getLeft() == null ? root.getFlight() : findSmallestFlight(root.getLeft());
+    }
     
 }
