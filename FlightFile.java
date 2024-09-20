@@ -4,35 +4,46 @@ import java.util.List;
 
 public class FlightFile {
     private static final String FILE_NAME = "flights.dat";
+    private FlightBST flightBST;
 
-    public void addFlight(Flight flight) throws IOException {
-        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(FILE_NAME, true)))) {
-            flight.write(out);
-        } catch (IOException e) {
-            System.err.println("Error writing to file: " + e.getMessage());
-            throw e;
+    public FlightFile() {
+        this.flightBST = new FlightBST();
+        loadFlights();
+    }
+
+    public void addFlight(Flight flight) throws Exception {
+        flightBST.insert(flight);
+        saveFlightsToFile();
+    }
+
+    public boolean deleteFlight(String flightCode) throws Exception {
+        try {
+            flightBST.delete(flightCode);
+            saveFlightsToFile();
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error deleting flight: " + e.getMessage());
+            return false;
         }
     }
 
-    public boolean deleteFlight(String flightCode) throws IOException {
-        List<Flight> flights = loadFlights();
-        boolean found = false;
+    public Flight searchFlight(String flightCode) {
+        return flightBST.search(flightCode);
+    }
 
+    public List<Flight> getAllFlights() {
+        return flightBST.inOrderTraversal();
+    }
+
+    private void saveFlightsToFile() throws IOException {
         try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(FILE_NAME)))) {
+            List<Flight> flights = flightBST.inOrderTraversal();
             for (Flight flight : flights) {
-                if (flight.getFlightCode().equals(flightCode) && !flight.isDeleted()) {
-                    flight.setDeleted(true);
-                    found = true;
-                }
                 flight.write(out);
             }
-        } catch (IOException e) {
-            System.err.println("Error writing to file: " + e.getMessage());
-            throw e;
         }
-
-        return found;
     }
+
 
     public List<Flight> loadFlights() throws IOException {
         List<Flight> flights = new ArrayList<>();
