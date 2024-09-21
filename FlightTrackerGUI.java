@@ -158,30 +158,30 @@ public class FlightTrackerGUI extends JFrame {
         String flightCode = flightCodeField.getText();
         LocalDateTime departureTime = getLocalDateTimeFromChooser(departureDateChooser, departureTimeSpinner);
         LocalDateTime arrivalTime = getLocalDateTimeFromChooser(arrivalDateChooser, arrivalTimeSpinner);
-
+    
         if (departureTime != null && arrivalTime != null && departureTime.isBefore(arrivalTime)) {
             Flight newFlight = new Flight(flightCode, departureTime, arrivalTime);
             try {
                 flightFile.addFlight(newFlight);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
                 tableModel.addRow(new Object[]{
                     newFlight.getFlightCode(),
-                    newFlight.getDepartureTime(),
-                    newFlight.getArrivalTime(),
+                    departureTime.format(formatter),
+                    arrivalTime.format(formatter),
                     newFlight.getTrackingURL().toString()
                 });
-                flightCodeField.setText("");
-                departureDateChooser.setDate(null);
-                arrivalDateChooser.setDate(null);
-                departureTimeSpinner.setValue(new Date());
-                arrivalTimeSpinner.setValue(new Date());
+                clearInputFields();
                 updateFlightInfo();
-            } catch (IOException ex) {
+                loadFlightsToTable();
+
+            } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error adding flight: " + ex.getMessage());
             }
         } else {
             JOptionPane.showMessageDialog(this, "Invalid input or arrival is before departure.");
         }
     }
+    
 
     private LocalDateTime getLocalDateTimeFromChooser(JDateChooser dateChooser, JSpinner timeSpinner) {
         if (dateChooser.getDate() == null) return null;
@@ -197,21 +197,23 @@ public class FlightTrackerGUI extends JFrame {
     private void deleteFlight(ActionEvent e) {
         int selectedRow = flightTable.getSelectedRow();
         if (selectedRow != -1) {
-            String flightCodeToDelete = (String) tableModel.getValueAt(selectedRow, 0); // Get flight code from the table
+            String flightCodeToDelete = (String) tableModel.getValueAt(selectedRow, 0);
             try {
                 if (flightFile.deleteFlight(flightCodeToDelete)) {
                     tableModel.removeRow(selectedRow);
                     updateFlightInfo();
+                    loadFlightsToTable();
                 } else {
                     JOptionPane.showMessageDialog(this, "Flight not found or could not be deleted.");
                 }
-            } catch (IOException ex) {
+            } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error deleting flight: " + ex.getMessage());
             }
         } else {
             JOptionPane.showMessageDialog(this, "Please select a flight to delete.");
         }
     }
+    
 
     private void editFlight(ActionEvent e) {
         int selectedRow = flightTable.getSelectedRow();
@@ -219,7 +221,7 @@ public class FlightTrackerGUI extends JFrame {
             String flightCode = (String) tableModel.getValueAt(selectedRow, 0);
             LocalDateTime departureTime = getLocalDateTimeFromChooser(departureDateChooser, departureTimeSpinner);
             LocalDateTime arrivalTime = getLocalDateTimeFromChooser(arrivalDateChooser, arrivalTimeSpinner);
-
+    
             if (departureTime != null && arrivalTime != null && departureTime.isBefore(arrivalTime)) {
                 try {
                     Flight updatedFlight = new Flight(flightCode, departureTime, arrivalTime);
@@ -229,7 +231,8 @@ public class FlightTrackerGUI extends JFrame {
                     JOptionPane.showMessageDialog(this, "Flight updated successfully.");
                     clearInputFields();
                     updateFlightInfo();
-                } catch (IOException ex) {
+                    loadFlightsToTable();
+                } catch (Exception ex) {
                     JOptionPane.showMessageDialog(this, "Error updating flight: " + ex.getMessage());
                 }
             } else {
@@ -239,6 +242,7 @@ public class FlightTrackerGUI extends JFrame {
             JOptionPane.showMessageDialog(this, "Please select a flight to edit.");
         }
     }
+    
 
     private void clearInputFields() {
         flightCodeField.setText("");
@@ -254,9 +258,13 @@ public class FlightTrackerGUI extends JFrame {
                 int selectedRow = flightTable.getSelectedRow();
                 if (selectedRow != -1) {
                     String flightCode = (String) tableModel.getValueAt(selectedRow, 0);
-                    LocalDateTime departureTime = (LocalDateTime) tableModel.getValueAt(selectedRow, 1);
-                    LocalDateTime arrivalTime = (LocalDateTime) tableModel.getValueAt(selectedRow, 2);
-                    
+                    String departureTimeStr = (String) tableModel.getValueAt(selectedRow, 1);
+                    String arrivalTimeStr = (String) tableModel.getValueAt(selectedRow, 2);
+    
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+                    LocalDateTime departureTime = LocalDateTime.parse(departureTimeStr, formatter);
+                    LocalDateTime arrivalTime = LocalDateTime.parse(arrivalTimeStr, formatter);
+    
                     flightCodeField.setText(flightCode);
                     departureDateChooser.setDate(Date.from(departureTime.atZone(ZoneId.systemDefault()).toInstant()));
                     arrivalDateChooser.setDate(Date.from(arrivalTime.atZone(ZoneId.systemDefault()).toInstant()));
@@ -266,6 +274,7 @@ public class FlightTrackerGUI extends JFrame {
             }
         });
     }
+    
 
     private LocalDateTime parseDateTime(String dateTimeString) {
         try {
@@ -280,11 +289,12 @@ public class FlightTrackerGUI extends JFrame {
         tableModel.setRowCount(0);
         try {
             List<Flight> flights = flightFile.getAllFlights();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
             for (Flight flight : flights) {
                 tableModel.addRow(new Object[]{
                     flight.getFlightCode(),
-                    flight.getDepartureTime(),
-                    flight.getArrivalTime(),
+                    flight.getDepartureTime().format(formatter),
+                    flight.getArrivalTime().format(formatter),
                     flight.getTrackingURL().toString()
                 });
             }
@@ -293,6 +303,7 @@ public class FlightTrackerGUI extends JFrame {
             ex.printStackTrace();
         }
     }
+    
 
     private JPanel createSearchPanel() {
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -313,25 +324,17 @@ public class FlightTrackerGUI extends JFrame {
             JOptionPane.showMessageDialog(this, "Please enter a flight code to search.");
             return;
         }
-
+    
         Flight foundFlight = flightFile.searchFlight(searchCode);
-
+    
         if (foundFlight != null) {
             highlightFlightInTable(foundFlight);
-
         } else {
             JOptionPane.showMessageDialog(this, "Flight not found.");
         }
     }
+    
 
-    private Flight sequentialSearch(List<Flight> flights, String flightCode) {
-        for (Flight flight : flights) {
-            if (flight.getFlightCode().equalsIgnoreCase(flightCode)) {
-                return flight;
-            }
-        }
-        return null;
-    }
 
     private void highlightFlightInTable(Flight flight) {
         for (int i = 0; i < tableModel.getRowCount(); i++) {
@@ -342,6 +345,7 @@ public class FlightTrackerGUI extends JFrame {
             }
         }
     }
+    
 
     private JPanel createViewerPanel() {
         JPanel viewerPanel = new JPanel(new GridBagLayout());
@@ -414,10 +418,10 @@ public class FlightTrackerGUI extends JFrame {
     private void updateFlightInfo() {
         if (currentUser.getRole() == User.Role.VIEWER) {
             try {
-                List<Flight> flights = flightFile.loadFlights();
+                List<Flight> flights = flightFile.getAllFlights();
                 Flight nextFlight = findNextOrCurrentFlight(flights);
                 updateViewerPanel(nextFlight);
-            } catch (IOException ex) {
+            } catch (Exception ex) {
                 statusLabel.setText("Status: Error loading flight information");
             }
         } else {
@@ -427,11 +431,15 @@ public class FlightTrackerGUI extends JFrame {
 
     private Flight findNextOrCurrentFlight(List<Flight> flights) {
         LocalDateTime now = LocalDateTime.now();
-        return flights.stream()
-                      .filter(f -> f.getArrivalTime().isAfter(now))
-                      .min((f1, f2) -> f1.getDepartureTime().compareTo(f2.getDepartureTime()))
-                      .orElse(null);
+        for (Flight flight : flights) {
+            if (flight.getDepartureTime().isAfter(now) || 
+                (flight.getDepartureTime().isBefore(now) && flight.getArrivalTime().isAfter(now))) {
+                return flight;
+            }
+        }
+        return null;
     }
+    
 
     private void logout() {
         int confirm = JOptionPane.showConfirmDialog(this,

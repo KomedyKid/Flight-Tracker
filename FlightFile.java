@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.Comparator;
 import java.util.List;
 
 public class FlightFile {
@@ -31,7 +32,9 @@ public class FlightFile {
     }
 
     public List<Flight> getAllFlights() {
-        return flightBST.inOrderTraversal();
+        List<Flight> flights = flightBST.inOrderTraversal();
+        flights.sort(Comparator.comparing(Flight::getDepartureTime));
+        return flights;
     }
 
     private void saveFlightsToFile() throws IOException {
@@ -45,19 +48,22 @@ public class FlightFile {
 
     private void loadFlights() {
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(FILE_NAME)))) {
-            while (in.available() > 0) {
-                Flight flight = Flight.read(in);
-                if ((!flight.isDeleted())) {
-                    flightBST.insert(flight);
+            while (true) {
+                try {
+                    Flight flight = Flight.read(in);
+                    if (!flight.isDeleted()) {
+                        flightBST.insert(flight);
+                    }
+                } catch (EOFException e) {
+                    break; // End of file reached
                 }
             }
-        } catch (EOFException e) {
-        // End of file reached
         } catch (IOException e) {
             System.err.println("Error reading from file: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Error loading flights: " + e.getMessage());
         }
     }
+    
 }
 

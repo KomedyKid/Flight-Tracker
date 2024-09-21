@@ -16,6 +16,13 @@ public class FlightNode {
         return flight;
     }
 
+    public void setFlight(Flight flight) {
+        if (flight == null) {
+            throw new IllegalArgumentException("Flight cannot be null.");
+        }
+        this.flight = flight;
+    }
+
     public FlightNode getLeft() {
         return left;
     }
