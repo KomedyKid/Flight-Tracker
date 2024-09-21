@@ -1,7 +1,6 @@
 import com.toedter.calendar.JDateChooser;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -218,16 +217,26 @@ public class FlightTrackerGUI extends JFrame {
     private void editFlight(ActionEvent e) {
         int selectedRow = flightTable.getSelectedRow();
         if (selectedRow != -1) {
-            String flightCode = (String) tableModel.getValueAt(selectedRow, 0);
+            String oldFlightCode = (String) tableModel.getValueAt(selectedRow, 0).toString();
+            String newFlightCode = flightCodeField.getText().trim();
             LocalDateTime departureTime = getLocalDateTimeFromChooser(departureDateChooser, departureTimeSpinner);
             LocalDateTime arrivalTime = getLocalDateTimeFromChooser(arrivalDateChooser, arrivalTimeSpinner);
     
+            if (newFlightCode.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Flight Code cannot be empty.");
+                return;
+            }
+    
             if (departureTime != null && arrivalTime != null && departureTime.isBefore(arrivalTime)) {
                 try {
-                    Flight updatedFlight = new Flight(flightCode, departureTime, arrivalTime);
-                    flightFile.updateFlight(updatedFlight);
-                    tableModel.setValueAt(departureTime, selectedRow, 1);
-                    tableModel.setValueAt(arrivalTime, selectedRow, 2);
+                    Flight updatedFlight = new Flight(newFlightCode, departureTime, arrivalTime);
+                    flightFile.updateFlight(oldFlightCode, updatedFlight);
+                    // Update the table model
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+                    tableModel.setValueAt(newFlightCode, selectedRow, 0);
+                    tableModel.setValueAt(departureTime.format(formatter), selectedRow, 1);
+                    tableModel.setValueAt(arrivalTime.format(formatter), selectedRow, 2);
+                    tableModel.setValueAt(updatedFlight.getTrackingURL().toString(), selectedRow, 3);
                     JOptionPane.showMessageDialog(this, "Flight updated successfully.");
                     clearInputFields();
                     updateFlightInfo();
@@ -242,6 +251,8 @@ public class FlightTrackerGUI extends JFrame {
             JOptionPane.showMessageDialog(this, "Please select a flight to edit.");
         }
     }
+    
+    
     
 
     private void clearInputFields() {

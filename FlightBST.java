@@ -107,5 +107,36 @@ public class FlightBST {
             inOrderRec(current.getRight(), flights);
         }
     }
+
+    public void updateFlight(String oldFlightCode, Flight updatedFlight) throws Exception {
+        if (oldFlightCode.equals(updatedFlight.getFlightCode())) {
+            // Flight code hasn't changed; update the flight data
+            FlightNode node = findNode(root, oldFlightCode);
+            if (node != null) {
+                node.setFlight(updatedFlight);
+            } else {
+                throw new Exception("Flight not found.");
+            }
+        } else {
+            // Flight code has changed; delete old flight and insert new one
+            delete(oldFlightCode);
+            insert(updatedFlight);
+        }
+    }
+    
+    private FlightNode findNode(FlightNode current, String flightCode) {
+        if (current == null) {
+            return null;
+        }
+        if (flightCode.equals(current.getFlight().getFlightCode())) {
+            return current;
+        }
+        if (flightCode.compareTo(current.getFlight().getFlightCode()) < 0) {
+            return findNode(current.getLeft(), flightCode);
+        } else {
+            return findNode(current.getRight(), flightCode);
+        }
+    }
+    
     
 }

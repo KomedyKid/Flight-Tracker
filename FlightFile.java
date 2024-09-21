@@ -64,6 +64,13 @@ public class FlightFile {
             System.err.println("Error loading flights: " + e.getMessage());
         }
     }
+
+    public void updateFlight(String oldFlightCode, Flight updatedFlight) throws Exception {
+        flightBST.updateFlight(oldFlightCode, updatedFlight);
+        saveFlightsToFile();
+    }
+    
+    
     
 }
 
