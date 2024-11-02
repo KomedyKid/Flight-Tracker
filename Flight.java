@@ -11,7 +11,7 @@ public class Flight {
     private boolean isDeleted;
     private FlightTrackingURL trackingURL;
 
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     public Flight(String flightCode, LocalDateTime departureTime, LocalDateTime arrivalTime) {
         this.flightCode = flightCode;
