@@ -14,8 +14,6 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
-import java.time.format.DateTimeFormatter;
-
 public class FlightTrackerGUI extends JFrame {
 
     private UserFile userFile;
